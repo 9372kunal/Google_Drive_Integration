@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 # Salesforce DX Project: Next Steps
 
 Now that you’ve created a Salesforce DX project, what’s next? Here are some documentation resources to get you started.
@@ -20,3 +21,28 @@ The `sfdx-project.json` file contains useful configuration information for your 
 =======
 # Google_Drive_Integration
 >>>>>>> 6e507b78a7de9cba70e58215e5dc3202e64ecffa
+=======
+# Google_Drive_Integration
+
+This project integrates Salesforce with Google Drive.
+
+## 🚀 Features
+Upload files from Salesforce to Google Drive
+Fetch files from Google Drive
+Secure OAuth 2.0 authentication
+
+## 🛠️ Tech Stack
+Salesforce (Apex, LWC)
+Google Drive API
+OAuth 2.0
+
+## ⚙️ Setup Steps
+1. Create Google Cloud Project
+2. Enable Google Drive API
+3. Configure OAuth Consent Screen
+4. Generate Client ID & Secret
+5. Configure in Salesforce
+
+## 👨‍💻 Author
+Kunal
+>>>>>>> a2f71e6c10b2f1d5d9ac9df1a827da1ff8779a23
