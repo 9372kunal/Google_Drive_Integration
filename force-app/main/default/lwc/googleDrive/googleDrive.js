@@ -8,15 +8,16 @@ export default class GoogleDrive extends LightningElement {
     files = [];
     showNoData = false;
 
-    // 🔥 Load ALL Standard Objects
-    @wire(getAllObjects)
-    wiredObjects({ data, error }) {
-        if (data) {
-            this.objectOptions = data.map(obj => {
-                return { label: obj, value: obj };
-            });
+    selectedFiles = [];
+    allSelected = false;
 
-            // default select first
+    @wire(getAllObjects)
+    wiredObjects({ data }) {
+        if (data) {
+            this.objectOptions = data.map(obj => ({
+                label: obj,
+                value: obj
+            }));
             this.selectedObject = data[0];
         }
     }
@@ -29,16 +30,83 @@ export default class GoogleDrive extends LightningElement {
         getRecordsWithFiles({ objectName: this.selectedObject })
         .then(result => {
             this.files = result;
-
-            // ✅ Show No Data if empty
             this.showNoData = result.length === 0;
-        })
-        .catch(error => {
-            console.error(error);
+
+            this.selectedFiles = [];
+            this.allSelected = false;
         });
     }
 
+    handleCheckbox(event){
+        const fileId = event.target.dataset.id;
+        const checked = event.target.checked;
+
+        if(checked){
+            this.selectedFiles = [...this.selectedFiles, fileId];
+        } else {
+            this.selectedFiles = this.selectedFiles.filter(id => id !== fileId);
+        }
+
+        this.files = this.files.map(file => {
+            if(file.fileId === fileId){
+                return { ...file, checked: checked };
+            }
+            return file;
+        });
+
+        this.allSelected = this.selectedFiles.length === this.files.length;
+    }
+
+    handleSelectAll(event){
+        this.allSelected = event.target.checked;
+
+        if(this.allSelected){
+            this.selectedFiles = this.files.map(f => f.fileId);
+        } else {
+            this.selectedFiles = [];
+        }
+
+        this.files = this.files.map(file => {
+            return { ...file, checked: this.allSelected };
+        });
+    }
+
+    handleDownloadSelected(){
+
+        if(this.selectedFiles.length === 0){
+            alert('Select at least one file');
+            return;
+        }
+
+        let i = 0;
+
+        const downloadNext = () => {
+            if(i >= this.selectedFiles.length){
+                return;
+            }
+
+            const fileId = this.selectedFiles[i];
+
+            window.open(`/sfc/servlet.shepherd/document/download/${fileId}`, '_blank');
+
+            i++;
+
+            setTimeout(downloadNext, 800);
+        };
+
+        downloadNext();
+    }
+
     handleUpload(){
-        alert('Google Drive Upload Coming Next Step 🚀');
+        if(this.selectedFiles.length === 0){
+            alert('Select files first');
+            return;
+        }
+.
+        alert('Google Drive Upload Next Step 🚀');
+    }
+
+    get selectedCount(){
+        return this.selectedFiles.length;
     }
 }
