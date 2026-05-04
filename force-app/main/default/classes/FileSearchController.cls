@@ -3,7 +3,7 @@ public with sharing class FileSearchController {
     @AuraEnabled(cacheable=true)
     public static List<String> getAllObjects() {
         return new List<String>{
-            'Account','Contact','Lead','Opportunity','Case'
+         'Account','Contact','Lead','Opportunity','Case'
         };
     }
 
@@ -13,7 +13,7 @@ public with sharing class FileSearchController {
         List<FileWrapper> result = new List<FileWrapper>();
 
         if(String.isBlank(objectName)){
-            return result;
+            return result;a
         }
 
         String query = 'SELECT Id, Name FROM ' + objectName + ' LIMIT 100';

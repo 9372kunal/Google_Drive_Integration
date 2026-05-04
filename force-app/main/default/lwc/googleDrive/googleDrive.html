@@ -1,1 +1,57 @@
- 
+<template>
+    <lightning-card title="File Search & Download">
+
+        <lightning-combobox
+            label="Select Object"
+            value={selectedObject}
+            options={objectOptions}
+            onchange={handleChange}>
+        </lightning-combobox>
+
+        <lightning-button label="Search" onclick={handleSearch}></lightning-button>
+
+        <lightning-button 
+            label="Upload to Google Drive"
+            variant="brand"
+            onclick={handleUpload}>
+        </lightning-button>
+
+        <!-- TABLE -->
+        <template if:true={files.length}>
+            <table class="slds-table slds-table_bordered">
+                <thead>
+                    <tr>
+                        <th>
+                            <input type="checkbox" onchange={handleSelectAll}/>
+                        </th>
+                        <th>S.No</th>
+                        <th>Record Id</th>
+                        <th>File Id</th>
+                        <th>File Type</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template for:each={files} for:item="file">
+                        <tr key={file.fileId}>
+                            <td>
+                                <input type="checkbox"
+                                    data-id={file.fileId}
+                                    checked={file.checked}
+                                    onchange={handleCheckbox}/>
+                            </td>
+                            <td>{file.sno}</td>
+                            <td>{file.recordId}</td>
+                            <td>{file.fileId}</td>
+                            <td>{file.fileType}</td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </template>
+
+        <template if:true={showNoData}>
+            <p style="color:red; padding:10px;">No Records Found</p>
+        </template>
+
+    </lightning-card>
+</template>

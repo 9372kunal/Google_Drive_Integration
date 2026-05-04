@@ -1,15 +1,36 @@
-import { LightningElement,wire} from 'lwc';
+import { LightningElement, wire } from 'lwc';
 import getRecordsWithFiles from '@salesforce/apex/FileSearchController.getRecordsWithFiles';
 import getAllObjects from '@salesforce/apex/FileSearchController.getAllObjects';
+
 export default class GoogleDrive extends LightningElement {
 
-     selectedObject;
+    selectedObject;
     objectOptions = [];
     files = [];
     showNoData = false;
 
     selectedFiles = [];
     allSelected = false;
+
+    isGoogleConnected = false; // ✅ NEW
+
+    // ✅ LISTENER ADD
+    connectedCallback() {
+        window.addEventListener('message', this.handleMessage.bind(this));
+    }
+
+    handleMessage(event) {
+        console.log('Message received:', event.data);
+
+        if (event.data.type === 'GOOGLE_DRIVE_AUTH_SUCCESS') {
+            this.isGoogleConnected = true;
+            alert('✅ Google Drive Connected Successfully');
+        }
+
+        if (event.data.type === 'GOOGLE_DRIVE_AUTH_ERROR') {
+            alert('❌ Error: ' + event.data.error);
+        }
+    }
 
     @wire(getAllObjects)
     wiredObjects({ data }) {
@@ -97,13 +118,22 @@ export default class GoogleDrive extends LightningElement {
         downloadNext();
     }
 
+    // ✅ UPDATED MAIN METHOD
     handleUpload(){
         if(this.selectedFiles.length === 0){
             alert('Select files first');
             return;
         }
-.
-        alert('Google Drive Upload Next Step 🚀');
+
+        // ✅ Pehle Google connect kar
+        if(!this.isGoogleConnected){
+            const url = '/apex/GoogleDriveCallback'; // ⚠️ apna VF page name daal
+            window.open(url, '_blank', 'width=600,height=600');
+            return;
+        }
+
+        // ✅ Next step (future)
+        alert('🚀 Uploading to Google Drive...');
     }
 
     get selectedCount(){
