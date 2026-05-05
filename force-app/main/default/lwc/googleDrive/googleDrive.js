@@ -127,7 +127,7 @@ export default class GoogleDrive extends LightningElement {
 
         // ✅ Pehle Google connect kar
         if(!this.isGoogleConnected){
-            const url = '/apex/GoogleDriveCallback'; // ⚠️ apna VF page name daal
+            const url = '/apex/GoogleDriveCallback'; 
             window.open(url, '_blank', 'width=600,height=600');
             return;
         }
