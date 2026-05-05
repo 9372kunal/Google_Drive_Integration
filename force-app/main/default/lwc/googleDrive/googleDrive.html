@@ -1,7 +1,6 @@
 <template>
-     <lightning-card title="File Search & Upload">
+    <lightning-card title="File Search & Download">
 
-        <!-- Dynamic Object Dropdown -->
         <lightning-combobox
             label="Select Object"
             value={selectedObject}
@@ -22,6 +21,9 @@
             <table class="slds-table slds-table_bordered">
                 <thead>
                     <tr>
+                        <th>
+                            <input type="checkbox" onchange={handleSelectAll}/>
+                        </th>
                         <th>S.No</th>
                         <th>Record Id</th>
                         <th>File Id</th>
@@ -31,6 +33,12 @@
                 <tbody>
                     <template for:each={files} for:item="file">
                         <tr key={file.fileId}>
+                            <td>
+                                <input type="checkbox"
+                                    data-id={file.fileId}
+                                    checked={file.checked}
+                                    onchange={handleCheckbox}/>
+                            </td>
                             <td>{file.sno}</td>
                             <td>{file.recordId}</td>
                             <td>{file.fileId}</td>
@@ -41,7 +49,6 @@
             </table>
         </template>
 
-        <!-- ❌ NO RECORD FOUND -->
         <template if:true={showNoData}>
             <p style="color:red; padding:10px;">No Records Found</p>
         </template>

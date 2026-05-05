@@ -1,17 +1,34 @@
 public with sharing class FileSearchController {
-   @AuraEnabled(cacheable=true)
+
+    @AuraEnabled(cacheable=true)
+    public static List<String> getAllObjects() {
+        return new List<String>{
+            'Account','Contact','Lead','Opportunity','Case'
+        };
+    }
+
+    @AuraEnabled(cacheable=true)
     public static List<FileWrapper> getRecordsWithFiles(String objectName) {
 
-        String query = 'SELECT Id FROM ' + objectName + ' LIMIT 100';
-        List<SObject> records = Database.query(query);
+        List<FileWrapper> result = new List<FileWrapper>();
 
-        Set<Id> recordIds = new Set<Id>();
-        for(SObject rec : records){
-            recordIds.add(rec.Id);
+        if(String.isBlank(objectName)){
+            return result;
         }
 
-        if(recordIds.isEmpty()){
-            return new List<FileWrapper>();
+        String query = 'SELECT Id, Name FROM ' + objectName + ' LIMIT 100';
+        List<SObject> records = Database.query(query);
+
+        if(records.isEmpty()){
+            return result;
+        }
+
+        Map<Id, String> recordMap = new Map<Id, String>();
+        Set<Id> recordIds = new Set<Id>();
+
+        for(SObject rec : records){
+            recordIds.add(rec.Id);
+            recordMap.put(rec.Id, (String)rec.get('Name'));
         }
 
         List<ContentDocumentLink> links = [
@@ -21,54 +38,60 @@ public with sharing class FileSearchController {
         ];
 
         if(links.isEmpty()){
-            return new List<FileWrapper>();
+            return result;
         }
 
-        List<FileWrapper> result = new List<FileWrapper>();
-        Integer count = 1;
+        Set<Id> docIds = new Set<Id>();
+        for(ContentDocumentLink l : links){
+            docIds.add(l.ContentDocumentId);
+        }
+
+        Map<Id, ContentVersion> cvMap = new Map<Id, ContentVersion>();
+
+        for(ContentVersion cv : [
+            SELECT Id, Title, FileType, ContentDocumentId
+            FROM ContentVersion
+            WHERE ContentDocumentId IN :docIds
+            AND IsLatest = true
+        ]){
+            cvMap.put(cv.ContentDocumentId, cv);
+        }
+
+        Integer i = 1;
 
         for(ContentDocumentLink link : links){
-            result.add(new FileWrapper(
-                count,
-                link.LinkedEntityId,
-                link.ContentDocumentId,
-                'File'
-            ));
-            count++;
+
+            ContentVersion cv = cvMap.get(link.ContentDocumentId);
+
+            if(cv != null){
+                result.add(new FileWrapper(
+                    i++,
+                    recordMap.get(link.LinkedEntityId),
+                    link.ContentDocumentId,
+                    cv.Id,
+                    cv.Title,
+                    cv.FileType
+                ));
+            }
         }
 
         return result;
     }
 
-    // 🔥 NEW METHOD → Get ALL Standard Objects
-    @AuraEnabled(cacheable=true)
-    public static List<String> getAllObjects() {
-        Map<String, Schema.SObjectType> globalMap = Schema.getGlobalDescribe();
-        List<String> objectNames = new List<String>();
-
-        for(String objName : globalMap.keySet()){
-            Schema.DescribeSObjectResult desciptionn = globalMap.get(objName).getDescribe();
-
-            // Only Standard Objects
-            if(!desciptionn.isCustom() && desciptionn.isQueryable()){
-                objectNames.add(objName);
-            }
-        }
-
-        objectNames.sort();
-        return objectNames;
-    }
-
     public class FileWrapper {
         @AuraEnabled public Integer sno;
-        @AuraEnabled public Id recordId;
+        @AuraEnabled public String recordName;
         @AuraEnabled public Id fileId;
+        @AuraEnabled public Id contentVersionId;
+        @AuraEnabled public String fileName;
         @AuraEnabled public String fileType;
 
-        public FileWrapper(Integer sno, Id recordId, Id fileId, String fileType){
+        public FileWrapper(Integer sno, String recordName, Id fileId, Id contentVersionId, String fileName, String fileType){
             this.sno = sno;
-            this.recordId = recordId;
+            this.recordName = recordName;
             this.fileId = fileId;
+            this.contentVersionId = contentVersionId;
+            this.fileName = fileName;
             this.fileType = fileType;
         }
     }
