@@ -1,0 +1,101 @@
+<template>
+    <!-- Upload Button - bahar dikhta hai -->
+    <lightning-button
+        label="Upload to Google Drive"
+        variant="brand"
+        onclick={handleOpenModal}>
+    </lightning-button>
+
+    <!-- Modal -->
+    <template if:true={isModalOpen}>
+        <div class="modal-backdrop">
+            <div class="modal-box">
+
+                <!-- Header -->
+                <div class="modal-header">
+                    <span class="modal-title">Upload Files</span>
+                    <button class="close-btn" onclick={handleCloseModal}>&#x2715;</button>
+                </div>
+
+                <!-- File List -->
+                <div class="modal-body">
+                    <template for:each={fileList} for:item="file">
+                        <div key={file.id} class="file-row">
+
+                            <!-- PDF Icon -->
+                            <div class="file-icon">
+                                <svg viewBox="0 0 36 36" width="36" height="36">
+                                    <rect width="36" height="36" rx="4" fill="#c23b22"/>
+                                    <text x="50%" y="58%" dominant-baseline="middle"
+                                        text-anchor="middle" fill="white"
+                                        font-size="10" font-weight="bold"
+                                        font-family="sans-serif">
+                                        {file.ext}
+                                    </text>
+                                </svg>
+                            </div>
+
+                            <!-- File Info + Progress -->
+                            <div class="file-info">
+                                <div class="file-name">{file.name}</div>
+                                <div class="file-size">{file.size}</div>
+
+                                <!-- Progress Bar -->
+                                <div class="progress-track">
+                                    <div
+                                        class="progress-fill"
+                                        style={file.progressStyle}>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Status Icon -->
+                            <div class="file-status">
+                                <template if:true={file.isDone}>
+                                    <!-- Green tick -->
+                                    <svg viewBox="0 0 24 24" width="24" height="24">
+                                        <circle cx="12" cy="12" r="12" fill="#2e844a"/>
+                                        <polyline points="6,12 10,16 18,8"
+                                            fill="none" stroke="white"
+                                            stroke-width="2.5"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"/>
+                                    </svg>
+                                </template>
+                                <template if:true={file.isError}>
+                                    <!-- Red cross -->
+                                    <svg viewBox="0 0 24 24" width="24" height="24">
+                                        <circle cx="12" cy="12" r="12" fill="#c23b22"/>
+                                        <line x1="7" y1="7" x2="17" y2="17"
+                                            stroke="white" stroke-width="2.5"
+                                            stroke-linecap="round"/>
+                                        <line x1="17" y1="7" x2="7" y2="17"
+                                            stroke="white" stroke-width="2.5"
+                                            stroke-linecap="round"/>
+                                    </svg>
+                                </template>
+                                <template if:true={file.isUploading}>
+                                    <!-- Spinner -->
+                                    <div class="spinner"></div>
+                                </template>
+                            </div>
+
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Footer -->
+                <div class="modal-footer">
+                    <span class="upload-count">{uploadSummary}</span>
+                    <lightning-button
+                        label="Done"
+                        variant="brand"
+                        onclick={handleCloseModal}
+                        disabled={isUploading}>
+                    </lightning-button>
+                </div>
+
+            </div>
+        </div>
+    </template>
+</template>

@@ -1,6 +1,7 @@
 <template>
     <lightning-card title="File Search & Download">
 
+        <!-- OBJECT DROPDOWN -->
         <lightning-combobox
             label="Select Object"
             value={selectedObject}
@@ -8,13 +9,14 @@
             onchange={handleChange}>
         </lightning-combobox>
 
+        <!-- BUTTONS -->
         <lightning-button label="Search" onclick={handleSearch}></lightning-button>
 
-        <lightning-button 
+        <!-- <lightning-button 
             label="Upload to Google Drive"
             variant="brand"
             onclick={handleUpload}>
-        </lightning-button>
+        </lightning-button> -->
 
         <!-- TABLE -->
         <template if:true={files.length}>
@@ -34,8 +36,9 @@
                     <template for:each={files} for:item="file">
                         <tr key={file.fileId}>
                             <td>
+                                <!-- ✅ FIXED HERE -->
                                 <input type="checkbox"
-                                    data-id={file.fileId}
+                                    data-id={file.contentVersionId}
                                     checked={file.checked}
                                     onchange={handleCheckbox}/>
                             </td>
@@ -47,11 +50,23 @@
                     </template>
                 </tbody>
             </table>
+
+            <p style="padding:10px;">
+                Selected: {selectedCount}
+            </p>
         </template>
 
+        <!-- NO DATA -->
         <template if:true={showNoData}>
             <p style="color:red; padding:10px;">No Records Found</p>
         </template>
+
+
+        <!-- Existing code ke saath ye add karo -->
+<c-google-drive-upload-modal
+    selected-files={filesForUpload}
+    folder-id={folderId}>
+</c-google-drive-upload-modal>
 
     </lightning-card>
 </template>
