@@ -1,5 +1,5 @@
 <template>
-    <lightning-card title="File Search & Download">
+    <lightning-card title="File Search & Downloadd">
 
         <lightning-combobox
             label="Select Object"
@@ -12,21 +12,21 @@
 
         <lightning-button 
             label="Upload to Google Drive"
-            variant="brand"
+            variant="brand" 
             onclick={handleUpload}>
         </lightning-button>
 
         <!-- TABLE -->
-        <template if:true={files.length}>
-            <table class="slds-table slds-table_bordered">
+        <template if:true={files}>
+            <table class="slds-table slds-table_bordered slds-table_cell-buffer">
                 <thead>
                     <tr>
                         <th>
                             <input type="checkbox" onchange={handleSelectAll}/>
                         </th>
                         <th>S.No</th>
+                        <th>Record Name</th>
                         <th>Record Id</th>
-                        <th>File Id</th>
                         <th>File Type</th>
                     </tr>
                 </thead>
@@ -35,13 +35,13 @@
                         <tr key={file.fileId}>
                             <td>
                                 <input type="checkbox"
-                                    data-id={file.fileId}
+                                    data-id={file.contentVersionId}
                                     checked={file.checked}
                                     onchange={handleCheckbox}/>
                             </td>
                             <td>{file.sno}</td>
+                            <td>{file.recordName}</td>
                             <td>{file.recordId}</td>
-                            <td>{file.fileId}</td>
                             <td>{file.fileType}</td>
                         </tr>
                     </template>
@@ -50,7 +50,7 @@
         </template>
 
         <template if:true={showNoData}>
-            <p style="color:red; padding:10px;">No Records Found</p>
+            <p style="  color:red; padding:10px;">No Records Found</p>
         </template>
 
     </lightning-card>

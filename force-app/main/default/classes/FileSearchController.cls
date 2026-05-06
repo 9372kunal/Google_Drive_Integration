@@ -9,7 +9,7 @@ public with sharing class FileSearchController {
 
     @AuraEnabled(cacheable=true)
     public static List<FileWrapper> getRecordsWithFiles(String objectName) {
-
+g
         List<FileWrapper> result = new List<FileWrapper>();
 
         if(String.isBlank(objectName)){
