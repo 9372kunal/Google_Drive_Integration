@@ -1,72 +1,135 @@
 <template>
-    <lightning-card title="File Search & Download">
+    <lightning-card title="File Search & Upload to Google Drive">
 
-        <!-- OBJECT DROPDOWN -->
-        <lightning-combobox
-            label="Select Object"
-            value={selectedObject}
-            options={objectOptions}
-            onchange={handleChange}>
-        </lightning-combobox>
+        <!-- ── Google Drive Connection Status ───────────────────────── -->
+        <div style="padding: 0 16px 12px 16px;">
 
-        <!-- BUTTONS -->
-        <lightning-button label="Search" onclick={handleSearch}></lightning-button>
+            <!-- Connected state -->
+            <template if:true={isGoogleConnected}>
+                <div style="display:flex; align-items:center; gap:8px; background:#f3fff3; border:1px solid #b7e4b7; border-radius:6px; padding:8px 12px;">
+                    <lightning-icon icon-name="utility:check" variant="success" size="x-small"></lightning-icon>
+                    <span style="font-size:13px; color:#2e7d32; font-weight:500;">
+                        Google Drive Connected
+                    </span>
+                </div>
+            </template>
 
-        <!-- <lightning-button 
-            label="Upload to Google Drive"
-            variant="brand"
-            onclick={handleUpload}>
-        </lightning-button> -->
+            <!-- Disconnected state -->
+            <template if:false={isGoogleConnected}>
+                <div style="background:#fff8e1; border:1px solid #ffe082; border-radius:6px; padding:8px 12px; display:flex; align-items:center; gap:10px;">
+                    <lightning-button
+                        label="Connect Google Drive"
+                        variant="brand"
+                        icon-name="utility:connected_apps"
+                        onclick={handleConnect}>
+                    </lightning-button>
+                    <span style="font-size:12px; color:#f57f17;">
+                        Upload ke liye pehle Google Drive connect karo
+      1              </span>
+                </div>
+            </template>
+        </div>
 
-        <!-- TABLE -->
+        <!-- ── Object Dropdown + Search Button ──────────────────────── -->
+        <div style="padding: 0 16px 12px 16px; display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+            <div style="flex:1; min-width:200px;">
+                <lightning-combobox
+                    label="Select Object"
+                    value={selectedObject}
+                    options={objectOptions}
+                    onchange={handleChange}>
+                </lightning-combobox>
+            </div>
+            <lightning-button
+                label="Search"
+                variant="neutral"
+                icon-name="utility:search"
+                onclick={handleSearch}>
+            </lightning-button>
+        </div>
+
+        <!-- ── Upload Button + Selected Count ───────────────────────── -->
         <template if:true={files.length}>
-            <table class="slds-table slds-table_bordered">
-                <thead>
-                    <tr>
-                        <th>
-                            <input type="checkbox" onchange={handleSelectAll}/>
-                        </th>
-                        <th>S.No</th>
-                        <th>Record Id</th>
-                        <th>File Id</th>
-                        <th>File Type</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <template for:each={files} for:item="file">
-                        <tr key={file.fileId}>
-                            <td>
-                                <!-- ✅ FIXED HERE -->
-                                <input type="checkbox"
-                                    data-id={file.contentVersionId}
-                                    checked={file.checked}
-                                    onchange={handleCheckbox}/>
-                            </td>
-                            <td>{file.sno}</td>
-                            <td>{file.recordId}</td>
-                            <td>{file.fileId}</td>
-                            <td>{file.fileType}</td>
+            <div style="padding: 0 16px 12px 16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                <!-- <lightning-button
+                    label="Upload to Google Drive"
+                    variant="brand"
+                    icon-name="utility:upload"
+                    onclick={handleUpload}>
+                </lightning-button> -->
+                <span style="font-size:13px; color:#706e6b;">
+                    {selectedCount} file(s) selected
+                </span>
+            </div>
+        </template>
+
+        <!-- ── Files Table ───────────────────────────────────────────── -->
+        <template if:true={files.length}>
+            <div style="padding: 0 16px 16px 16px; overflow-x:auto;">
+                <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped">
+                    <thead>
+                        <tr class="slds-line-height_reset">
+                            <!-- Select All checkbox -->
+                            <th style="width:40px;">
+                                <input
+                                    type="checkbox"
+                                    checked={allSelected}
+                                    onchange={handleSelectAll}
+                                    title="Select All"/>
+                            </th>
+                            <th><div class="slds-truncate">S.No</div></th>
+                            <th><div class="slds-truncate">File Name</div></th>
+                            <th><div class="slds-truncate">File Type</div></th>
+                            <th><div class="slds-truncate">Record Id</div></th>
+                            <th><div class="slds-truncate">File Id</div></th>
                         </tr>
-                    </template>
-                </tbody>
-            </table>
-
-            <p style="padding:10px;">
-                Selected: {selectedCount}
-            </p>
+                    </thead>
+                    <tbody>
+                        <template for:each={files} for:item="file">
+                            <tr key={file.fileId}>
+                                <!-- Row checkbox -->
+                                <td>
+                                    <input
+                                        type="checkbox"
+                                        data-id={file.contentVersionId}
+                                        checked={file.checked}
+                                        onchange={handleCheckbox}/>
+                                </td>
+                                <td>{file.sno}</td>
+                                <td>
+                                    <div class="slds-truncate" style="max-width:200px;">
+                                        {file.fileName}
+                                    </div>
+                                </td>
+                                <td>{file.fileType}</td>
+                                <td>
+                                    <span style="font-size:11px; color:#706e6b;">
+                                        {file.recordId}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span style="font-size:11px; color:#706e6b;">
+                                        {file.fileId}
+                                    </span>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
         </template>
 
-        <!-- NO DATA -->
+        <!-- ── No Records Found ──────────────────────────────────────── -->
         <template if:true={showNoData}>
-            <p style="color:red; padding:10px;">No Records Found</p>
+            <p style="color:red; padding:10px 16px;">No Records Found</p>
         </template>
 
-
-        <!-- Existing code ke saath ye add karo -->
-<c-google-drive-upload-modal
-    selected-files={filesForUpload}
-    folder-id={folderId}>
-</c-google-drive-upload-modal>
+        <!-- ── Upload Modal Component ────────────────────────────────── -->
+        <!-- selectedFiles change hone pe modal ko updated data milta hai -->
+        <c-google-drive-upload-modal
+            selected-files={filesForUpload}
+            folder-id={folderId}>
+        </c-google-drive-upload-modal>
 
     </lightning-card>
 </template>
