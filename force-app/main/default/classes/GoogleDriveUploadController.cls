@@ -139,6 +139,282 @@
 
 
 
+// public with sharing class GoogleDriveUploadController {
+
+//     // Small files ke liye seedha upload - ek hi Apex call
+//     @AuraEnabled
+//     public static Map<String, String> uploadSmallFile(
+//         Id contentVersionId,
+//         String folderId
+//     ) {
+//         System.debug('uploadSmallFile → ' + contentVersionId);
+
+//         // Token pehle lo - koi DML nahi hoga agar already valid hai
+//         // Agar refresh hua toh @future se update hoga - callout se conflict nahi
+//         String accessToken = GoogleDriveAuthController.getValidAccessToken();
+
+//         // Metadata alag query - VersionData baad mein
+//         ContentVersion meta = [
+//             SELECT Id, Title, FileType, ContentSize
+//             FROM ContentVersion
+//             WHERE Id = :contentVersionId
+//             LIMIT 1
+//         ];
+
+//         // VersionData alag query - heap safe
+//         ContentVersion cvData = [
+//             SELECT VersionData
+//             FROM ContentVersion
+//             WHERE Id = :contentVersionId
+//             LIMIT 1
+//         ];
+
+//         String mimeType  = getMimeType(meta.FileType);
+
+//         // Step 1: Resumable session initiate karo
+//         String uploadUrl = initiateSession(
+//             meta.Title, meta.ContentSize, mimeType, accessToken, folderId
+//         );
+
+//         // Step 2: File upload karo
+//         HttpRequest req = new HttpRequest();
+//         req.setEndpoint(uploadUrl);
+//         req.setMethod('PUT');
+//         req.setHeader('Content-Type', mimeType);
+//         req.setBodyAsBlob(cvData.VersionData);
+//         req.setTimeout(120000);
+
+//         HttpResponse res = new Http().send(req);
+//         System.debug('Small upload response: ' + res.getStatusCode());
+
+//         Map<String, String> result = new Map<String, String>();
+//         if (res.getStatusCode() == 200 || res.getStatusCode() == 201) {
+//             Map<String, Object> data =
+//                 (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
+//             String fileId = (String) data.get('id');
+//             result.put('status',    'success');
+//             result.put('fileId',    fileId);
+//             result.put('driveLink', 'https://drive.google.com/file/d/' + fileId + '/view');
+//             System.debug('Small upload SUCCESS → fileId: ' + fileId);
+//         } else {
+//             result.put('status', 'error');
+//             result.put('error',
+//                 'Upload failed [' + res.getStatusCode() + ']: ' + res.getBody()
+//             );
+//             System.debug('Small upload FAILED → ' + res.getBody());
+//         }
+//         return result;
+//     }
+
+//     // Large files ke liye Step 1: Resumable session initiate karo
+//     // Session URL LWC ko return hota hai
+//     @AuraEnabled
+//     public static String initiateLargeUpload(
+//         Id contentVersionId,
+//         String folderId
+//     ) {
+//         System.debug('initiateLargeUpload → ' + contentVersionId);
+
+//         String accessToken = GoogleDriveAuthController.getValidAccessToken();
+
+//         ContentVersion meta = [
+//             SELECT Id, Title, FileType, ContentSize
+//             FROM ContentVersion
+//             WHERE Id = :contentVersionId
+//             LIMIT 1
+//         ];
+
+//         String mimeType  = getMimeType(meta.FileType);
+//         String uploadUrl = initiateSession(
+//             meta.Title, meta.ContentSize, mimeType, accessToken, folderId
+//         );
+
+//         System.debug('Session ready for: ' + meta.Title + ' | size: ' + meta.ContentSize);
+
+//         // uploadUrl|||fileSize|||mimeType format mein return karo
+//         return uploadUrl + '|||' + meta.ContentSize + '|||' + mimeType;
+//     }
+
+//     // Large files ke liye Step 2: Ek chunk upload karo
+//     // LWC baar baar ye call karta hai jab tak file complete na ho
+//     @AuraEnabled
+//     public static Map<String, String> uploadChunk(
+//         Id contentVersionId,
+//         String uploadUrl,
+//         String mimeType,
+//         Integer offset,
+//         Integer fileSize
+//     ) {
+//         System.debug('uploadChunk → offset: ' + offset + ' / ' + fileSize);
+
+//         Integer chunkSize = 4 * 1024 * 1024; // 4MB per chunk
+
+//         // Sirf VersionData query karo
+//         ContentVersion cvData = [
+//             SELECT VersionData
+//             FROM ContentVersion
+//             WHERE Id = :contentVersionId
+//             LIMIT 1
+//         ];
+
+//         // Base64 se chunk nikalo
+//         String  base64Full       = EncodingUtil.base64Encode(cvData.VersionData);
+//         Integer remaining        = fileSize - offset;
+//         Integer currentChunkSize = Math.min(chunkSize, remaining);
+
+//         // Base64 substring calculate karo
+//         // 3 bytes = 4 base64 chars
+//         Integer b64Start = (offset / 3) * 4;
+//         Integer b64End   = Math.min(
+//             ((offset + currentChunkSize + 2) / 3) * 4,
+//             base64Full.length()
+//         );
+
+//         String b64Chunk = base64Full.substring(b64Start, b64End);
+
+//         // Base64 padding fix karo
+//         Integer padMod = Math.mod(b64Chunk.length(), 4);
+//         if      (padMod == 2) b64Chunk += '==';
+//         else if (padMod == 3) b64Chunk += '=';
+
+//         Blob    chunkBlob    = EncodingUtil.base64Decode(b64Chunk);
+//         Integer actualSize   = chunkBlob.size();
+//         Integer chunkEnd     = offset + actualSize - 1;
+//         String  contentRange = 'bytes ' + offset + '-' + chunkEnd + '/' + fileSize;
+
+//         System.debug('Sending chunk: ' + contentRange + ' | blob size: ' + actualSize);
+
+//         HttpRequest req = new HttpRequest();
+//         req.setEndpoint(uploadUrl);
+//         req.setMethod('PUT');
+//         req.setHeader('Content-Type',  mimeType);
+//         req.setHeader('Content-Range', contentRange);
+//         req.setBodyAsBlob(chunkBlob);
+//         req.setTimeout(120000);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             
+
+//         HttpResponse res = new Http().send(req);
+//         System.debug('Chunk response: ' + res.getStatusCode());
+
+//         Map<String, String> result = new Map<String, String>();
+
+//         if (res.getStatusCode() == 200 || res.getStatusCode() == 201) {
+//             // Upload complete - file ID lo
+//             Map<String, Object> data =
+//                 (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
+//             String fileId = (String) data.get('id');
+//             result.put('status',     'done');
+//             result.put('fileId',     fileId);
+//             result.put('driveLink',  'https://drive.google.com/file/d/' + fileId + '/view');
+//             result.put('nextOffset', String.valueOf(fileSize));
+//             System.debug('Chunk upload DONE → fileId: ' + fileId);
+
+//         } else if (res.getStatusCode() == 308) {
+//             // Chunk accepted - next chunk bhejo
+//             result.put('status',     'continue');
+//             result.put('nextOffset', String.valueOf(offset + actualSize));
+//             System.debug('Chunk accepted (308) → next offset: ' + (offset + actualSize));
+
+//         } else {
+//             result.put('status', 'error');
+//             result.put('error',
+//                 'Chunk failed [' + res.getStatusCode() + ']: ' + res.getBody()
+//             );
+//             System.debug('Chunk FAILED → ' + res.getBody());
+//         }
+
+//         return result;
+//     }
+
+//     // Backward compatibility ke liye - purana method
+//     @AuraEnabled
+//     public static List<Map<String, String>> uploadFilesToDrive(
+//         List<Id> contentVersionIds,
+//         String folderId
+//     ) {
+//         List<Map<String, String>> results = new List<Map<String, String>>();
+//         for (Id cvId : contentVersionIds) {
+//             try {
+//                 Map<String, String> r = uploadSmallFile(cvId, folderId);
+//                 results.add(r);
+//             } catch(Exception e) {
+//                 Map<String, String> r = new Map<String, String>();
+//                 r.put('status', 'error');
+//                 r.put('error',  e.getMessage());
+//                 results.add(r);
+//             }
+//         }
+//         return results;
+//     }
+
+//     // Google Drive resumable upload session initiate karta hai
+//     private static String initiateSession(
+//         String fileName,
+//         Integer fileSize,
+//         String mimeType,
+//         String accessToken,
+//         String folderId
+//     ) {
+//         Map<String, Object> metadata = new Map<String, Object>();
+//         metadata.put('name', fileName);
+//         if (String.isNotBlank(folderId)) {
+//             metadata.put('parents', new List<String>{ folderId });
+//         }
+
+//         HttpRequest req = new HttpRequest();
+//         req.setEndpoint(
+//             'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable'
+//         );
+//         req.setMethod('POST');
+//         req.setHeader('Authorization',           'Bearer ' + accessToken);
+//         req.setHeader('Content-Type',            'application/json; charset=UTF-8');
+//         req.setHeader('X-Upload-Content-Type',   mimeType);
+//         req.setHeader('X-Upload-Content-Length', String.valueOf(fileSize));
+//         req.setBody(JSON.serialize(metadata));
+
+//         HttpResponse res = new Http().send(req);
+//         System.debug('initiateSession → status: ' + res.getStatusCode());
+
+//         if (res.getStatusCode() != 200) {
+//             throw new AuraHandledException('Session init failed: ' + res.getBody());
+//         }
+
+//         String url = res.getHeader('Location');
+//         if (String.isBlank(url)) {
+//             throw new AuraHandledException('No upload URL returned.');
+//         }
+//         return url;
+//     }
+
+//     // File extension se MIME type determine karta hai
+//     private static String getMimeType(String fileType) {
+//         Map<String, String> mimeMap = new Map<String, String>{
+//             'PDF'  => 'application/pdf',
+//             'PNG'  => 'image/png',
+//             'JPG'  => 'image/jpeg',
+//             'JPEG' => 'image/jpeg',
+//             'GIF'  => 'image/gif',
+//             'DOCX' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+//             'DOC'  => 'application/msword',
+//             'XLSX' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+//             'XLS'  => 'application/vnd.ms-excel',
+//             'PPTX' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+//             'CSV'  => 'text/csv',
+//             'TXT'  => 'text/plain',
+//             'ZIP'  => 'application/zip',
+//             'MP4'  => 'video/mp4',
+//             'MP3'  => 'audio/mpeg',
+//             'SVG'  => 'image/svg+xml',
+//             'WEBP' => 'image/webp'
+//         };
+//         return mimeMap.containsKey(fileType?.toUpperCase())
+//             ? mimeMap.get(fileType.toUpperCase())
+//             : 'application/octet-stream';
+//     }
+// }
+
+
+
+
 public with sharing class GoogleDriveUploadController {
 
     // Small files ke liye seedha upload - ek hi Apex call
@@ -149,11 +425,9 @@ public with sharing class GoogleDriveUploadController {
     ) {
         System.debug('uploadSmallFile → ' + contentVersionId);
 
-        // Token pehle lo - koi DML nahi hoga agar already valid hai
-        // Agar refresh hua toh @future se update hoga - callout se conflict nahi
         String accessToken = GoogleDriveAuthController.getValidAccessToken();
 
-        // Metadata alag query - VersionData baad mein
+        // Metadata alag query
         ContentVersion meta = [
             SELECT Id, Title, FileType, ContentSize
             FROM ContentVersion
@@ -170,13 +444,11 @@ public with sharing class GoogleDriveUploadController {
         ];
 
         String mimeType  = getMimeType(meta.FileType);
-
-        // Step 1: Resumable session initiate karo
         String uploadUrl = initiateSession(
             meta.Title, meta.ContentSize, mimeType, accessToken, folderId
         );
 
-        // Step 2: File upload karo
+        // File upload karo
         HttpRequest req = new HttpRequest();
         req.setEndpoint(uploadUrl);
         req.setMethod('PUT');
@@ -206,16 +478,17 @@ public with sharing class GoogleDriveUploadController {
         return result;
     }
 
-    // Large files ke liye Step 1: Resumable session initiate karo
-    // Session URL LWC ko return hota hai
-    @AuraEnabled
-    public static String initiateLargeUpload(
-        Id contentVersionId,
-        String folderId
-    ) {
-        System.debug('initiateLargeUpload → ' + contentVersionId);
-
+    // Large file upload start karo - Queueable job queue mein daalo
+@AuraEnabled
+public static String startLargeUpload(
+    Id contentVersionId,
+    String folderId
+) {
+    System.debug('startLargeUpload → ' + contentVersionId);
+    
+    try {
         String accessToken = GoogleDriveAuthController.getValidAccessToken();
+        System.debug('Access token retrieved');
 
         ContentVersion meta = [
             SELECT Id, Title, FileType, ContentSize
@@ -223,109 +496,67 @@ public with sharing class GoogleDriveUploadController {
             WHERE Id = :contentVersionId
             LIMIT 1
         ];
+        System.debug('Meta → Title: ' + meta.Title + ' | Size: ' + meta.ContentSize);
 
         String mimeType  = getMimeType(meta.FileType);
         String uploadUrl = initiateSession(
             meta.Title, meta.ContentSize, mimeType, accessToken, folderId
         );
+        System.debug('Session initiated → URL received: ' + (uploadUrl != null));
 
-        System.debug('Session ready for: ' + meta.Title + ' | size: ' + meta.ContentSize);
+        GoogleDriveUploadStatus__c status = new GoogleDriveUploadStatus__c(
+            Status__c = 'inprogress',
+            Offset__c = 0
+        );
+        insert status;
+        System.debug('Status record inserted → Id: ' + status.Id);
 
-        // uploadUrl|||fileSize|||mimeType format mein return karo
-        return uploadUrl + '|||' + meta.ContentSize + '|||' + mimeType;
+        System.enqueueJob(new GoogleDriveUploadJob(
+            contentVersionId,
+            uploadUrl,
+            mimeType,
+            0,
+            meta.ContentSize,
+            status.Id
+        ));
+        System.debug('Job enqueued . statusId: ' + status.Id + ' | filesize : ' + meta.ContentSize);
+        System.debug('Job enqueued successfully');
+        
+        //return status ID for LWC polling
+        return status.Id;
+
+    } catch(Exception e) {
+        System.debug('startLargeUpload EXCEPTION: ' + e.getMessage());
+        System.debug('Stack: ' + e.getStackTraceString());
+        throw new AuraHandledException(e.getMessage());
     }
+}
 
-    // Large files ke liye Step 2: Ek chunk upload karo
-    // LWC baar baar ye call karta hai jab tak file complete na ho
+
+    // LWC polling ke liye - upload status check karo
     @AuraEnabled
-    public static Map<String, String> uploadChunk(
-        Id contentVersionId,
-        String uploadUrl,
-        String mimeType,
-        Integer offset,
-        Integer fileSize
-    ) {
-        System.debug('uploadChunk → offset: ' + offset + ' / ' + fileSize);
+    public static Map<String, String> checkUploadStatus(Id statusId) {
+        System.debug('checkUploadStatus → ' + statusId);
 
-        Integer chunkSize = 4 * 1024 * 1024; // 4MB per chunk
-
-        // Sirf VersionData query karo
-        ContentVersion cvData = [
-            SELECT VersionData
-            FROM ContentVersion
-            WHERE Id = :contentVersionId
+        GoogleDriveUploadStatus__c status = [
+            SELECT Status__c, Offset__c, File_Id__c, Drive_Link__c, Error__c
+            FROM GoogleDriveUploadStatus__c
+            WHERE Id = :statusId
             LIMIT 1
         ];
 
-        // Base64 se chunk nikalo
-        String  base64Full       = EncodingUtil.base64Encode(cvData.VersionData);
-        Integer remaining        = fileSize - offset;
-        Integer currentChunkSize = Math.min(chunkSize, remaining);
-
-        // Base64 substring calculate karo
-        // 3 bytes = 4 base64 chars
-        Integer b64Start = (offset / 3) * 4;
-        Integer b64End   = Math.min(
-            ((offset + currentChunkSize + 2) / 3) * 4,
-            base64Full.length()
-        );
-
-        String b64Chunk = base64Full.substring(b64Start, b64End);
-
-        // Base64 padding fix karo
-        Integer padMod = Math.mod(b64Chunk.length(), 4);
-        if      (padMod == 2) b64Chunk += '==';
-        else if (padMod == 3) b64Chunk += '=';
-
-        Blob    chunkBlob    = EncodingUtil.base64Decode(b64Chunk);
-        Integer actualSize   = chunkBlob.size();
-        Integer chunkEnd     = offset + actualSize - 1;
-        String  contentRange = 'bytes ' + offset + '-' + chunkEnd + '/' + fileSize;
-
-        System.debug('Sending chunk: ' + contentRange + ' | blob size: ' + actualSize);
-
-        HttpRequest req = new HttpRequest();
-        req.setEndpoint(uploadUrl);
-        req.setMethod('PUT');
-        req.setHeader('Content-Type',  mimeType);
-        req.setHeader('Content-Range', contentRange);
-        req.setBodyAsBlob(chunkBlob);
-        req.setTimeout(120000);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             
-
-        HttpResponse res = new Http().send(req);
-        System.debug('Chunk response: ' + res.getStatusCode());
-
         Map<String, String> result = new Map<String, String>();
+        result.put('status',    status.Status__c);
+        result.put('offset',    String.valueOf((Integer) status.Offset__c));
+        result.put('fileId',    status.File_Id__c    != null ? status.File_Id__c    : '');
+        result.put('driveLink', status.Drive_Link__c != null ? status.Drive_Link__c : '');
+        result.put('error',     status.Error__c      != null ? status.Error__c      : '');
 
-        if (res.getStatusCode() == 200 || res.getStatusCode() == 201) {
-            // Upload complete - file ID lo
-            Map<String, Object> data =
-                (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
-            String fileId = (String) data.get('id');
-            result.put('status',     'done');
-            result.put('fileId',     fileId);
-            result.put('driveLink',  'https://drive.google.com/file/d/' + fileId + '/view');
-            result.put('nextOffset', String.valueOf(fileSize));
-            System.debug('Chunk upload DONE → fileId: ' + fileId);
-
-        } else if (res.getStatusCode() == 308) {
-            // Chunk accepted - next chunk bhejo
-            result.put('status',     'continue');
-            result.put('nextOffset', String.valueOf(offset + actualSize));
-            System.debug('Chunk accepted (308) → next offset: ' + (offset + actualSize));
-
-        } else {
-            result.put('status', 'error');
-            result.put('error',
-                'Chunk failed [' + res.getStatusCode() + ']: ' + res.getBody()
-            );
-            System.debug('Chunk FAILED → ' + res.getBody());
-        }
-
+        System.debug('Status: ' + status.Status__c + ' | offset: ' + status.Offset__c);
         return result;
     }
 
-    // Backward compatibility ke liye - purana method
+    // Backward compatibility ke liye
     @AuraEnabled
     public static List<Map<String, String>> uploadFilesToDrive(
         List<Id> contentVersionIds,
@@ -345,6 +576,32 @@ public with sharing class GoogleDriveUploadController {
         }
         return results;
     }
+
+
+
+
+    //new
+
+    @AuraEnabled
+public static String initiateLargeUpload(Id contentVersionId, String folderId) {
+    return 'test'; // temporary
+}
+
+@AuraEnabled
+public static Map<String, String> uploadChunk(
+    Id contentVersionId,
+    String uploadUrl,
+    String mimeType,
+    Integer offset,
+    Integer fileSize
+) {
+    return new Map<String, String>{ 'status' => 'ok' };
+}
+
+
+
+
+//new
 
     // Google Drive resumable upload session initiate karta hai
     private static String initiateSession(

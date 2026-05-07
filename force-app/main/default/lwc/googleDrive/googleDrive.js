@@ -406,17 +406,19 @@ export default class GoogleDrive extends LightningElement {
     // ── Selected files getter - modal ko pass karne ke liye ──────────
     // contentVersionId, fileName, fileType, fileSize saath bhejo
     get filesForUpload() {
-        const selected = this.files.filter(f => f.checked);
-        console.log('filesForUpload → count:', selected.length);
-        return JSON.parse(JSON.stringify(
-            selected.map(f => ({
-                contentVersionId : f.contentVersionId,
-                fileName         : f.fileName  || f.title || 'Unknown',
-                fileType         : f.fileType  || 'FILE',
-                fileSize         : f.contentSize || 0  // Large/small decide karne ke liye zaroori
-            }))
-        ));
-    }
+    const selected = this.files.filter(f => f.checked);
+    console.log('filesForUpload → first file:', selected.length > 0 ? JSON.stringify(selected[0]) : 'none');
+
+    return JSON.parse(JSON.stringify(
+        selected.map(f => ({
+            contentVersionId : f.contentVersionId,
+            fileName         : f.fileName    || 'Unknown',
+            fileType         : f.fileType    || 'FILE',
+            fileSize         : f.contentSize || 0  // ← contentSize from FileWrapper
+        }))
+    ));
+}
+
 
     // ── Selected files count getter ───────────────────────────────────
     get selectedCount() {
